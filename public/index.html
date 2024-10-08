@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+    margin: 0;
+    padding: 20px;
+}
+
+.container {
+    max-width: 400px;
+    margin: 0 auto;
+    background: white;
+    padding: 20px;
+    border-radius: 5px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+h1, h2 {
+    text-align: center;
+}
+
+input {
+    width: 100%;
+    padding: 10px;
+    margin: 10px 0;
+}
+
+button {
+    width: 100%;
+    padding: 10px;
+    background-color: #28a745;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #218838;
+}
+
+#reactionTime {
+    margin-top: 20px;
+    font-size: 20px;
+    text-align: center;
+}
+</style>    <title>Reaction Time Tester</title>
+</head>
+<body>
+    <div class="container">
+        <h1>Reaction Time Tester</h1>
+        
+        <div id="login">
+            <h2>Login</h2>
+            <input type="email" id="email" placeholder="Email" required>
+            <input type="password" id="password" placeholder="Password" required>
+            <button id="loginButton">Login</button>
+            <p id="loginMessage"></p>
+        </div>
+
+        <div id="timerSection" style="display: none;">
+            <h2>Press the button when it appears!</h2>
+            <button id="startTimerButton">Start Timer</button>
+            <button id="stopTimerButton" style="display: none;">Stop Timer</button>
+            <p id="reactionTime"></p>
+        </div>
+    </div>
+    <script>
+        const loginButton = document.getElementById('loginButton');
+const startTimerButton = document.getElementById('startTimerButton');
+const stopTimerButton = document.getElementById('stopTimerButton');
+const loginMessage = document.getElementById('loginMessage');
+const timerSection = document.getElementById('timerSection');
+const reactionTime = document.getElementById('reactionTime');
+
+let timerStartTime;
+let timerTimeout;
+
+loginButton.addEventListener('click', async () => {
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+
+    // Make a login request to your backend
+    const response = await fetch('http://localhost:5000/api/login', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email, password })
+    });
+
+    const data = await response.json();
+    if (response.ok) {
+        loginMessage.textContent = 'Login successful! Get ready to test your reaction time.';
+        loginMessage.style.color = 'green';
+        timerSection.style.display = 'block';
+    } else {
+        loginMessage.textContent = data.message;
+        loginMessage.style.color = 'red';
+    }
+});
+
+startTimerButton.addEventListener('click', () => {
+    reactionTime.textContent = '';
+    startTimerButton.style.display = 'none';
+    stopTimerButton.style.display = 'block';
+
+    // Start a random timer between 2 to 5 seconds
+    timerTimeout = setTimeout(() => {
+        stopTimerButton.click(); // Automatically stop the timer after the timeout
+    }, Math.random() * 3000 + 2000); // Random between 2s and 5s
+});
+
+stopTimerButton.addEventListener('click', () => {
+    if (!timerStartTime) {
+        // Capture the start time when the button is clicked
+        timerStartTime = new Date().getTime();
+        stopTimerButton.textContent = 'Stop Timer';
+        return;
+    }
+
+    // Calculate reaction time
+    const reactionTimeValue = new Date().getTime() - timerStartTime;
+    reactionTime.textContent = `Your reaction time: ${reactionTimeValue} ms`;
+    clearTimeout(timerTimeout);
+    startTimerButton.style.display = 'block';
+    stopTimerButton.style.display = 'none';
+    timerStartTime = null; // Reset the timer
+});
+
+    </script>
+</body>
+</html>
