@@ -5,6 +5,9 @@ const connectDB = require('./config/db');
 const userRoutes = require('./routes/userRoutes');
 const timerRoutes = require('./routes/timerRoutes');
 const path = require('path');
+const swaggerJsDoc = require('swagger-jsdoc');
+const swaggerUi = require('swagger-ui-express');
+
 
 // Load environment variables
 dotenv.config();
@@ -15,6 +18,30 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public'))); // Serve static files from public directory
+
+// Configuration de Swagger
+const swaggerOptions = {
+  swaggerDefinition: {
+    openapi: '3.0.0',
+    info: {
+      title: 'My API',
+      version: '1.0.0',
+      description: 'API documentation with Swagger',
+    },
+    servers: [
+      {
+        url: 'http://localhost:5000',
+      },
+    ],
+  },
+  apis: ['./routes/*.js'], // Chemin vers les fichiers contenant la documentation des routes
+};
+
+const swaggerDocs = swaggerJsDoc(swaggerOptions);
+
+// Route pour accéder à la documentation Swagger
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
+
 
 // Routes
 app.get('/', (req, res) => {
@@ -55,5 +82,6 @@ const startServer = async () => {
 if (process.env.NODE_ENV !== 'test') {
   startServer();
 }
+
 
 module.exports = app; // Export app for testing

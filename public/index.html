@@ -50,12 +50,18 @@
             font-size: 20px;
             text-align: center;
         }
+        #registerMessage, #loginMessage {
+    margin-top: 10px;
+    font-size: 14px;
+}
+
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Reaction Time Tester</h1>
 
+        <!-- Login section -->
         <div id="login">
             <h2>Login</h2>
             <input type="email" id="email" placeholder="Email" required>
@@ -64,6 +70,19 @@
             <p id="loginMessage"></p>
         </div>
 
+          <!-- Register section -->
+          <div id="register" style="display: none;">
+            <h2>Register</h2>
+            <input type="email" id="emailRegister" placeholder="Email" required>
+            <input type="password" id="passwordRegister" placeholder="Password" required>
+            <input type="number" id="role" placeholder="role" required>
+
+            <button id="registerButton">Register</button>
+            <p id="registerMessage"></p>
+            <p class="toggle-link" id="toggleToLogin">Already have an account? Login here</p>
+        </div>
+        <p><a href="#" id="switchToRegister">Don't have an account? Register here</a></p>
+        <p><a href="#" id="switchToLogin" style="display: none;">Already have an account? Login here</a></p>
         <div id="timerSection" style="display: none;">
             <h2>Press the button when it appears!</h2>
             <button id="startTimerButton">Start Timer</button>
@@ -78,6 +97,12 @@
         const loginMessage = document.getElementById('loginMessage');
         const timerSection = document.getElementById('timerSection');
         const reactionTime = document.getElementById('reactionTime');
+        const registerButton = document.getElementById('registerButton');
+        const registerMessage = document.getElementById('registerMessage');
+        const switchToRegister = document.getElementById('switchToRegister');
+        const switchToLogin = document.getElementById('switchToLogin');
+        const registerSection = document.getElementById('register');
+        const loginSection = document.getElementById('login');
 
         let timerStartTime;
         let userToken;
@@ -120,7 +145,46 @@
                 stopTimerButton.style.display = 'block'; // Show stop button only after timer starts
             }, Math.random() * 3000 + 2000); // Random between 2s and 5s
         });
+        // Permet de basculer entre login et register
+        switchToRegister.addEventListener('click', () => {
+            loginSection.style.display = 'none';
+            registerSection.style.display = 'block';
+            switchToRegister.style.display = 'none';
+            switchToLogin.style.display = 'block';
+        });
 
+        switchToLogin.addEventListener('click', () => {
+            loginSection.style.display = 'block';
+            registerSection.style.display = 'none';
+            switchToRegister.style.display = 'block';
+            switchToLogin.style.display = 'none';
+        });
+
+// Handle registration
+registerButton.addEventListener('click', async () => {
+            const roletst = document.getElementById('role').value;
+            const emailtst = document.getElementById('emailRegister').value;
+            const passwordtst = document.getElementById('passwordRegister').value;
+
+            const response = await fetch('http://localhost:5000/api/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({  email:emailtst, password:passwordtst,role:1 })
+            });
+
+            const data = await response.json();
+            if (response.ok) {
+                registerMessage.textContent = 'Registration successful! Please log in.';
+                registerMessage.style.color = 'green';
+                registerSection.style.display = 'none';
+                loginSection.style.display = 'block';
+            } else {
+                registerMessage.textContent = data.message;
+                registerMessage.style.color = 'red';
+            }
+        });
         stopTimerButton.addEventListener('click', async () => {
             if (!timerStartTime) return; // Prevent clicking before timer starts
 
