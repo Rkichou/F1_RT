@@ -5,6 +5,7 @@ const app = require('../src/index'); // Remplacez par le chemin vers votre fichi
 const Timer = require('../src/models/Timer');
 const User = require('../src/models/User');
 const { MongoMemoryServer } = require('mongodb-memory-server');
+//npm install --save-dev jest supertest mongodb-memory-server
 
 let mongoServer;
 
@@ -54,10 +55,12 @@ describe('Timer Controller', () => {
       .post('/api/submit-reaction-time')
       .set('Authorization', `Bearer ${token}`)
       .send({ time: -5 });
-
+  
     expect(res.statusCode).toBe(400);
     expect(res.body.errors).toHaveProperty('time', 'Reaction time must be a non-negative number');
   });
+  
+  
 
   it('should retrieve reaction times for a user', async () => {
     const user1 = new User({ email: 'test1@example.com', password: 'password123', role: 1 });
