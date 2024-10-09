@@ -34,23 +34,24 @@ exports.submitReactionTime = async (req, res) => {
 // @desc    Retrieve reaction times for a user
 // @route   GET /get-reaction-times/:userId
 // @access  Private
+// @desc    Retrieve reaction times for a user
+// @route   GET /get-reaction-times/:userId
+// @access  Private
 exports.getReactionTimes = async (req, res) => {
   try {
     const { userId } = req.params;
     const { sort, filter } = req.query;
 
-    // Authorization: Users can only access their own data unless admin
+    // Vérification que l'utilisateur est admin ou que l'utilisateur actuel accède à ses propres données
     if (req.user.role !== 0 && req.user._id.toString() !== userId) {
       return res.status(403).json({ message: 'Forbidden: Access is denied' });
     }
 
-    // Build query
+    // Build query pour les timers de cet utilisateur
     let query = { user_id: userId };
 
-    // Apply filtering if any (e.g., date range)
+    // Filtrage basé sur une plage de dates (si fourni)
     if (filter) {
-      // Example: filter by date range
-      // Expected format: filter=startDate,endDate
       const [startDate, endDate] = filter.split(',');
       if (startDate && endDate) {
         query.createdAt = {
@@ -60,18 +61,20 @@ exports.getReactionTimes = async (req, res) => {
       }
     }
 
-    // Build sort
+    // Tri des résultats basé sur la requête (par défaut, ordre décroissant par date de création)
     let sortOption = {};
     if (sort === 'asc') {
       sortOption.time = 1;
     } else if (sort === 'desc') {
       sortOption.time = -1;
     } else {
-      sortOption.createdAt = -1; // default
+      sortOption.createdAt = -1; // Par défaut, trier par date de création décroissante
     }
 
+    // Récupérer les temps de réaction correspondant à l'utilisateur
     const timers = await Timer.find(query).sort(sortOption);
 
+    // Réponse avec les temps de réaction
     res.status(200).json({
       count: timers.length,
       timers,

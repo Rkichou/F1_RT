@@ -16,6 +16,7 @@ beforeAll(async () => {
   // Créez un utilisateur pour les tests
   const user = new User({ email: 'test@example.com', password: 'password123', role: 1 });
   await user.save();
+  
 });
 
 afterEach(async () => {
@@ -26,6 +27,7 @@ afterEach(async () => {
 afterAll(async () => {
   await mongoose.disconnect();
   await mongoServer.stop();
+  
 });
 
 describe('Timer Controller', () => {
@@ -58,12 +60,16 @@ describe('Timer Controller', () => {
   });
 
   it('should retrieve reaction times for a user', async () => {
-    const timer = new Timer({ user_id: user._id, time: 150 });
+    const user1 = new User({ email: 'test1@example.com', password: 'password123', role: 1 });
+    await user1.save();
+    const timer = new Timer({ user_id: user1._id, time: 150 });
     await timer.save();
+    const token1 = user1.generateToken();
+
 
     const res = await request(app)
-      .get(`/api/get-reaction-times/${user._id}`)
-      .set('Authorization', `Bearer ${token}`);
+      .get(`/api/get-reaction-times/${user1._id}`)
+      .set('Authorization', `Bearer ${token1}`);
 
     expect(res.statusCode).toBe(200);
     expect(res.body.count).toBe(1);
@@ -76,7 +82,7 @@ describe('Timer Controller', () => {
     const token2 = user2.generateToken();
 
     const res = await request(app)
-      .get(`/get-reaction-times/${user2._id}`)
+      .get(`/api/get-reaction-times/${user2._id}`)
       .set('Authorization', `Bearer ${token}`);
 
     expect(res.statusCode).toBe(403);
