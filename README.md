@@ -1,5 +1,3 @@
-Voici le code du fichier README :
-
 
 # Reaction Time Tracking API
 
