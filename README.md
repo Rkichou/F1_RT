@@ -1,6 +1,6 @@
 Voici le code du fichier README :
 
-```markdown
+
 # Reaction Time Tracking API
 
 ## Table of Contents
