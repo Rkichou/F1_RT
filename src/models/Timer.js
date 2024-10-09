@@ -3,18 +3,14 @@ const mongoose = require('mongoose');
 const timerSchema = new mongoose.Schema({
   user_id: {
     type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
     required: true,
-    ref: 'User', // Référence au modèle User
   },
   time: {
     type: Number,
-    required: true, // En millisecondes
+    required: [true, 'Reaction time is required'],
+    min: [0, 'Reaction time cannot be negative'],
   },
-  createdAt: {
-    type: Date,
-    default: Date.now, // Date de création par défaut
-  },
-});
+}, { timestamps: true });
 
-const Timer = mongoose.model('Timer', timerSchema);
-module.exports = Timer;
+module.exports = mongoose.model('Timer', timerSchema);

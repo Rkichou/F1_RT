@@ -1,28 +1,24 @@
-version: '3.8'
-
 services:
   app:
     build: .
     ports:
-      - '3000:3000'
+      - "5000:5000"
+    env_file:
+      - .env
     depends_on:
       - mongo
-    
-    networks:
-      - mynetwork
+    volumes:
+      - .:/app
+      - /app/node_modules  # Prevents host's node_modules from overwriting container's node_modules
+    restart: unless-stopped
 
   mongo:
-    image: mongo:6.0
-    ports:
-      - '27017:27017'
+    image: mongo:6
+    restart: unless-stopped
     volumes:
       - mongo-data:/data/db
-    networks:
-      - mynetwork
+    ports:
+      - "27017:27017"
 
 volumes:
   mongo-data:
-
-networks:
-  mynetwork:
-    driver: bridge

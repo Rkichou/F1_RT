@@ -1,27 +1,40 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
-module.exports = async (req, res, next) => {
-  const token = req.headers['authorization']?.split(' ')[1];
-  if (!token) {
-    console.log('Token manquant');
-    return res.status(403).json({ error: 'Accès refusé' });
+const authMiddleware = async (req, res, next) => {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ message: 'Authorization token missing or malformed' });
   }
+
+  const token = authHeader.split(' ')[1];
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    console.log('Token décodé:', decoded);
-    
-    req.user = await User.findById(decoded.id);
+    req.user = await User.findById(decoded.id).select('-password');
     if (!req.user) {
-      console.log('Utilisateur non trouvé');
-      return res.status(403).json({ error: 'Accès refusé' });
+      return res.status(401).json({ message: 'User not found' });
     }
-
-    console.log('Utilisateur trouvé:', req.user);
     next();
   } catch (error) {
-    console.error('Erreur de token:', error);
-    return res.status(403).json({ error: 'Token invalide' });
+    console.error('Auth Middleware Error:', error.message);
+    res.status(401).json({ message: 'Invalid or expired token' });
   }
 };
+
+// Role-based access control
+const authorize = (roles = []) => {
+  // roles can be a single role or an array of roles
+  if (typeof roles === 'boolean') {
+    roles = [roles];
+  }
+  return (req, res, next) => {
+    if (!roles.includes(req.user.role)) {
+      return res.status(403).json({ message: 'Forbidden: Access is denied' });
+    }
+    next();
+  };
+};
+
+module.exports = { authMiddleware, authorize };

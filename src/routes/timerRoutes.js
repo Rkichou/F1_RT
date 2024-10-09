@@ -1,29 +1,43 @@
 const express = require('express');
-const timerService = require('../services/timerService');
 const router = express.Router();
-const authMiddleware = require('../middleware/authMiddleware'); // Middleware d'authentification
+const timerController = require('../controllers/timerController'); // Import your controller
+const Timer = require('../models/Timer'); // Import the Timer model
+const { authMiddleware } = require('../middleware/authMiddleware');
 
-// Route pour soumettre un temps de réaction
-router.post('/submit-reaction-time', authMiddleware, async (req, res) => {
-  const { time } = req.body;
-  const userId = req.user.id; // Récupère l'ID utilisateur depuis le middleware d'authentification
-  try {
-    const reactionTime = await timerService.submitReactionTime(userId, time);
-    res.status(201).json({ message: 'Reaction time submitted', reactionTime });
-  } catch (error) {
-    res.status(400).json({ error: error.message });
-  }
+// Submit a reaction time
+router.post('/submit-reaction-time', authMiddleware, timerController.submitReactionTime);
+
+// Retrieve reaction times for a user
+router.get('/get-reaction-times/:userId',authMiddleware, timerController.getReactionTimes);
+
+// Example route for getting all timers (if needed)
+router.get('/timers', async (req, res) => {
+    try {
+        const timers = await Timer.find(); // Fetch all timers from the database
+        res.json(timers); // Return the list of timers
+    } catch (error) {
+        console.error('Error fetching timers:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
 });
 
-// Route pour récupérer les temps de réaction d'un utilisateur
-router.get('/get-reaction-times/:userId', authMiddleware, async (req, res) => {
-  const userId = req.params.userId; // Récupère l'ID utilisateur depuis les paramètres
-  try {
-    const reactionTimes = await timerService.getReactionTimes(userId);
-    res.status(200).json(reactionTimes);
-  } catch (error) {
-    res.status(400).json({ error: error.message });
-  }
+// Example route for creating a timer (if you want to have a separate route)
+router.post('/timers', async (req, res) => {
+    try {
+        const { user_id, time } = req.body;
+
+        // Create a new timer
+        const timer = new Timer({ user_id, time });
+        await timer.save();
+
+        res.status(201).json({
+            message: 'Timer created successfully',
+            timer,
+        });
+    } catch (error) {
+        console.error('Error creating timer:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
 });
 
-module.exports = router;
+module.exports = router; 

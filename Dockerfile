@@ -1,20 +1,23 @@
-# Utiliser l'image Node.js
+# Use official Node.js LTS image
 FROM node:18
 
-# Définir le répertoire de travail
-WORKDIR /usr/src/app
+# Install build tools (required for modules like bcrypt)
+RUN apt-get update && apt-get install -y build-essential python3
 
-# Copier package.json et package-lock.json
+# Create and set the working directory
+WORKDIR /app
+
+# Copy package.json and package-lock.json
 COPY package*.json ./
 
-# Installer les dépendances
-RUN npm install
+# Install dependencies with verbose logging for debugging
+RUN npm install --production --verbose
 
-# Copier le reste de l'application
+# Copy the rest of the application code
 COPY . .
 
-# Exposer le port
-EXPOSE 3000
+# Expose the application's port
+EXPOSE 5000
 
-# Commande pour démarrer l'application
-CMD ["node", "./src/index.js"]
+# Define the command to run the application
+CMD ["npm", "start"]

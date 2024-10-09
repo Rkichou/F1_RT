@@ -1,36 +1,46 @@
 const mongoose = require('mongoose');
+const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 
 const userSchema = new mongoose.Schema({
   email: {
     type: String,
-    required: true,
+    required: [true, 'Email is required'],
     unique: true,
+    lowercase: true,
     trim: true,
+    match: [/.+\@.+\..+/, 'Please fill a valid email address'],
   },
   password: {
     type: String,
-    required: true,
+    required: [true, 'Password is required'],
   },
   role: {
     type: Boolean,
     required: true,
-    default: 1, // 1 = user, 0 = admin
+    enum: [0, 1], // 0 = admin, 1 = user
+    default: 1,
   },
-});
+}, { timestamps: true });
 
-// Middleware pour hacher le mot de passe avant de sauvegarder l'utilisateur
+// Hash password before saving
 userSchema.pre('save', async function (next) {
-  if (this.isModified('password') || this.isNew) {
-    this.password = await bcrypt.hash(this.password, 10);
-  }
+  if (!this.isModified('password')) return next();
+  
+  const salt = await bcrypt.genSalt(parseInt(process.env.BCRYPT_SALT));
+  this.password = await bcrypt.hash(this.password, salt);
   next();
 });
 
-// Méthode pour comparer le mot de passe haché
+// Method to compare passwords
 userSchema.methods.comparePassword = async function (candidatePassword) {
-  return await bcrypt.compare(candidatePassword, this.password);
+  return bcrypt.compare(candidatePassword, this.password);
 };
 
-const User = mongoose.model('User', userSchema);
-module.exports = User;
+userSchema.methods.generateToken = function () {
+    return jwt.sign({ id: this._id, role: this.role }, process.env.JWT_SECRET, {
+      expiresIn: '1h',
+    });
+  };
+
+module.exports = mongoose.model('User', userSchema);

@@ -2,15 +2,15 @@ const mongoose = require('mongoose');
 
 const connectDB = async () => {
   try {
-    const dbURI = process.env.MONGODB_URI || 'mongodb://mongo:27017/f1_reaction_timer';
-    await mongoose.connect(dbURI, {
+    const conn = await mongoose.connect(process.env.MONGO_URI, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
+      // You can add more options if needed
     });
-    console.log('La connexion à MongoDB a bien été établie !');
+    console.log(`MongoDB Connected: ${conn.connection.host}`);
   } catch (error) {
-    console.error('Erreur lors de la connexion à MongoDB :', error);
-    process.exit(1); // Quitte le processus en cas d'erreur
+    console.error('MongoDB connection failed:', error.message);
+    process.exit(1); // Exit the process with failure
   }
 };
 
