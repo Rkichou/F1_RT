@@ -3,58 +3,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reaction Time Tester</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+        }
 
-<style>body {
-    font-family: Arial, sans-serif;
-    background-color: #f4f4f4;
-    margin: 0;
-    padding: 20px;
-}
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
 
-.container {
-    max-width: 400px;
-    margin: 0 auto;
-    background: white;
-    padding: 20px;
-    border-radius: 5px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-}
+        h1, h2 {
+            text-align: center;
+        }
 
-h1, h2 {
-    text-align: center;
-}
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+        }
 
-input {
-    width: 100%;
-    padding: 10px;
-    margin: 10px 0;
-}
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
 
-button {
-    width: 100%;
-    padding: 10px;
-    background-color: #28a745;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-}
+        button:hover {
+            background-color: #218838;
+        }
 
-button:hover {
-    background-color: #218838;
-}
-
-#reactionTime {
-    margin-top: 20px;
-    font-size: 20px;
-    text-align: center;
-}
-</style>    <title>Reaction Time Tester</title>
+        #reactionTime {
+            margin-top: 20px;
+            font-size: 20px;
+            text-align: center;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
         <h1>Reaction Time Tester</h1>
-        
+
         <div id="login">
             <h2>Login</h2>
             <input type="email" id="email" placeholder="Email" required>
@@ -72,67 +73,83 @@ button:hover {
     </div>
     <script>
         const loginButton = document.getElementById('loginButton');
-const startTimerButton = document.getElementById('startTimerButton');
-const stopTimerButton = document.getElementById('stopTimerButton');
-const loginMessage = document.getElementById('loginMessage');
-const timerSection = document.getElementById('timerSection');
-const reactionTime = document.getElementById('reactionTime');
+        const startTimerButton = document.getElementById('startTimerButton');
+        const stopTimerButton = document.getElementById('stopTimerButton');
+        const loginMessage = document.getElementById('loginMessage');
+        const timerSection = document.getElementById('timerSection');
+        const reactionTime = document.getElementById('reactionTime');
 
-let timerStartTime;
-let timerTimeout;
+        let timerStartTime;
+        let userToken;
+        let timerTimeout;
 
-loginButton.addEventListener('click', async () => {
-    const email = document.getElementById('email').value;
-    const password = document.getElementById('password').value;
+        loginButton.addEventListener('click', async () => {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
 
-    // Make a login request to your backend
-    const response = await fetch('http://localhost:5000/api/login', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ email, password })
-    });
+            // Make a login request to your backend
+            const response = await fetch('http://localhost:5000/api/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ email, password })
+            });
 
-    const data = await response.json();
-    if (response.ok) {
-        loginMessage.textContent = 'Login successful! Get ready to test your reaction time.';
-        loginMessage.style.color = 'green';
-        timerSection.style.display = 'block';
-    } else {
-        loginMessage.textContent = data.message;
-        loginMessage.style.color = 'red';
-    }
-});
+            const data = await response.json();
+            if (response.ok) {
+                loginMessage.textContent = 'Login successful! Get ready to test your reaction time.';
+                loginMessage.style.color = 'green';
+                timerSection.style.display = 'block';
+                userToken = data.token; // Store the token for authenticated requests
+            } else {
+                loginMessage.textContent = data.message;
+                loginMessage.style.color = 'red';
+            }
+        });
 
-startTimerButton.addEventListener('click', () => {
-    reactionTime.textContent = '';
-    startTimerButton.style.display = 'none';
-    stopTimerButton.style.display = 'block';
+        startTimerButton.addEventListener('click', () => {
+            reactionTime.textContent = 'Wait for the button to appear...';
+            startTimerButton.style.display = 'none';
+            stopTimerButton.style.display = 'none'; // Hide stop button initially
 
-    // Start a random timer between 2 to 5 seconds
-    timerTimeout = setTimeout(() => {
-        stopTimerButton.click(); // Automatically stop the timer after the timeout
-    }, Math.random() * 3000 + 2000); // Random between 2s and 5s
-});
+            // Start a random timer between 2 to 5 seconds
+            timerTimeout = setTimeout(() => {
+                timerStartTime = new Date().getTime(); // Start the timer
+                reactionTime.textContent = 'Now! Press the stop button!';
+                stopTimerButton.style.display = 'block'; // Show stop button only after timer starts
+            }, Math.random() * 3000 + 2000); // Random between 2s and 5s
+        });
 
-stopTimerButton.addEventListener('click', () => {
-    if (!timerStartTime) {
-        // Capture the start time when the button is clicked
-        timerStartTime = new Date().getTime();
-        stopTimerButton.textContent = 'Stop Timer';
-        return;
-    }
+        stopTimerButton.addEventListener('click', async () => {
+            if (!timerStartTime) return; // Prevent clicking before timer starts
 
-    // Calculate reaction time
-    const reactionTimeValue = new Date().getTime() - timerStartTime;
-    reactionTime.textContent = `Your reaction time: ${reactionTimeValue} ms`;
-    clearTimeout(timerTimeout);
-    startTimerButton.style.display = 'block';
-    stopTimerButton.style.display = 'none';
-    timerStartTime = null; // Reset the timer
-});
+            // Calculate reaction time
+            const reactionTimeValue = new Date().getTime() - timerStartTime;
+            reactionTime.textContent = `Your reaction time: ${reactionTimeValue} ms`;
 
+            // Send reaction time to the backend
+            const response = await fetch('http://localhost:5000/api/submit-reaction-time', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${userToken}` // Send the token for authentication
+                },
+                body: JSON.stringify({ time: reactionTimeValue })
+            });
+
+            const data = await response.json();
+            if (response.ok) {
+                reactionTime.textContent += ' (Saved in database)';
+            } else {
+                reactionTime.textContent += ' (Failed to save to database)';
+            }
+
+            clearTimeout(timerTimeout);
+            startTimerButton.style.display = 'block';
+            stopTimerButton.style.display = 'none';
+            timerStartTime = null; // Reset the timer
+        });
     </script>
 </body>
 </html>

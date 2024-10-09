@@ -1,69 +1,77 @@
+// tests/userController.test.js
 const request = require('supertest');
-const app = require('../index'); // Adjust if your app is exported differently
 const mongoose = require('mongoose');
-const User = require('../models/User');
+const app = require('../src/index'); // Remplacez par le chemin vers votre fichier de configuration d'application
+const User = require('../src/models/User');
+const { MongoMemoryServer } = require('mongodb-memory-server');
+
+let mongoServer;
 
 beforeAll(async () => {
-  // Connect to a test database
-  await mongoose.connect('mongodb://localhost:27017/f1_reaction_timer_test', {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  });
+  mongoServer = await MongoMemoryServer.create();
+  const uri = mongoServer.getUri();
+  await mongoose.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true });
+});
+
+afterEach(async () => {
+  await User.deleteMany({});
 });
 
 afterAll(async () => {
-  await mongoose.connection.db.dropDatabase();
-  await mongoose.connection.close();
+  await mongoose.disconnect();
+  await mongoServer.stop();
 });
 
-describe('User Registration and Login', () => {
-  const userData = {
-    email: 'testuser@example.com',
-    password: 'password123',
-    role: 1,
-  };
-
+describe('User Controller', () => {
   it('should register a new user', async () => {
     const res = await request(app)
       .post('/api/register')
-      .send(userData);
-    
-    expect(res.statusCode).toEqual(201);
+      .send({ email: 'test@example.com', password: 'password123', role: 1 });
+
+    expect(res.statusCode).toBe(201);
+    expect(res.body).toHaveProperty('message', 'User registered successfully');
     expect(res.body).toHaveProperty('token');
-    expect(res.body.user.email).toBe(userData.email);
+    expect(res.body.user).toHaveProperty('email', 'test@example.com');
   });
 
-  it('should not register a user with existing email', async () => {
+  it('should not register a user with an existing email', async () => {
+    await request(app)
+      .post('/api/register')
+      .send({ email: 'test@example.com', password: 'password123', role: 1 });
+
     const res = await request(app)
       .post('/api/register')
-      .send(userData);
-    
-    expect(res.statusCode).toEqual(400);
-    expect(res.body.message).toBe('Email already in use');
+      .send({ email: 'test@example.com', password: 'password456', role: 0 });
+
+    expect(res.statusCode).toBe(400);
+    expect(res.body).toHaveProperty('message', 'Email already in use');
   });
 
   it('should login an existing user', async () => {
+    await request(app)
+      .post('/api/register')
+      .send({ email: 'test@example.com', password: 'password123', role: 1 });
+
     const res = await request(app)
       .post('/api/login')
-      .send({
-        email: userData.email,
-        password: userData.password,
-      });
-    
-    expect(res.statusCode).toEqual(200);
+      .send({ email: 'test@example.com', password: 'password123' });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toHaveProperty('message', 'Logged in successfully');
     expect(res.body).toHaveProperty('token');
-    expect(res.body.user.email).toBe(userData.email);
+    expect(res.body.user).toHaveProperty('email', 'test@example.com');
   });
 
-  it('should not login with incorrect password', async () => {
+  it('should not login with incorrect credentials', async () => {
+    await request(app)
+      .post('/api/register')
+      .send({ email: 'test@example.com', password: 'password123', role: 1 });
+
     const res = await request(app)
       .post('/api/login')
-      .send({
-        email: userData.email,
-        password: 'wrongpassword',
-      });
-    
-    expect(res.statusCode).toEqual(400);
-    expect(res.body.message).toBe('Invalid credentials');
+      .send({ email: 'test@example.com', password: 'wrongpassword' });
+
+    expect(res.statusCode).toBe(400);
+    expect(res.body).toHaveProperty('message', 'Invalid credentials');
   });
 });

@@ -1,71 +1,85 @@
+// tests/timerController.test.js
 const request = require('supertest');
-const app = require('../index'); // Adjust if your app is exported differently
 const mongoose = require('mongoose');
-const User = require('../models/User');
-const Timer = require('../models/Timer');
+const app = require('../src/index'); // Remplacez par le chemin vers votre fichier de configuration d'application
+const Timer = require('../src/models/Timer');
+const User = require('../src/models/User');
+const { MongoMemoryServer } = require('mongodb-memory-server');
 
-let token;
-let userId;
+let mongoServer;
 
 beforeAll(async () => {
-  // Connect to a test database
-  await mongoose.connect('mongodb://localhost:27017/f1_reaction_timer_test', {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  });
-
-  // Create a test user
-  const user = new User({
-    email: 'timeruser@example.com',
-    password: 'password123',
-    role: 1,
-  });
+  mongoServer = await MongoMemoryServer.create();
+  const uri = mongoServer.getUri();
+  await mongoose.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true });
+  
+  // Créez un utilisateur pour les tests
+  const user = new User({ email: 'test@example.com', password: 'password123', role: 1 });
   await user.save();
-  userId = user._id;
+});
 
-  // Login to get token
-  const res = await request(app)
-    .post('/api/login')
-    .send({
-      email: 'timeruser@example.com',
-      password: 'password123',
-    });
-  token = res.body.token;
+afterEach(async () => {
+  // Nettoyez la base de données après chaque test
+  await Timer.deleteMany({});
 });
 
 afterAll(async () => {
-  await mongoose.connection.db.dropDatabase();
-  await mongoose.connection.close();
+  await mongoose.disconnect();
+  await mongoServer.stop();
 });
 
-describe('Timer Endpoints', () => {
-  it('should submit a reaction time', async () => {
+describe('Timer Controller', () => {
+  let token;
+  beforeEach(async () => {
+    // Simuler un JWT pour les tests
+    const user = await User.findOne({ email: 'test@example.com' });
+    token = user.generateToken(); // Assurez-vous que la méthode generateToken est disponible
+  });
+
+  it('Reaction time submitted successfully', async () => {
     const res = await request(app)
       .post('/api/submit-reaction-time')
       .set('Authorization', `Bearer ${token}`)
-      .send({
-        time: 250,
-      });
-    
-    expect(res.statusCode).toEqual(201);
-    expect(res.body.timer.time).toBe(250);
+      .send({ time: 123 });
+
+    expect(res.statusCode).toBe(201);
+    expect(res.body).toHaveProperty('message', 'Reaction time submitted successfully');
+    expect(res.body.timer).toHaveProperty('time', 123);
   });
 
-  it('should retrieve reaction times for the user', async () => {
+  it('should not submit a negative reaction time', async () => {
     const res = await request(app)
-      .get(`/api/get-reaction-times/${userId}`)
+      .post('/api/submit-reaction-time')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ time: -5 });
+
+    expect(res.statusCode).toBe(400);
+    expect(res.body.errors).toHaveProperty('time', 'Reaction time must be a non-negative number');
+  });
+
+  it('should retrieve reaction times for a user', async () => {
+    const timer = new Timer({ user_id: user._id, time: 150 });
+    await timer.save();
+
+    const res = await request(app)
+      .get(`/api/get-reaction-times/${user._id}`)
       .set('Authorization', `Bearer ${token}`);
-    
-    expect(res.statusCode).toEqual(200);
-    expect(res.body.count).toBeGreaterThanOrEqual(1);
-    expect(res.body.timers[0]).toHaveProperty('time');
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body.count).toBe(1);
+    expect(res.body.timers[0]).toHaveProperty('time', 150);
   });
 
-  it('should not allow unauthorized access', async () => {
+  it('should return 403 if user tries to access another user’s data', async () => {
+    const user2 = new User({ email: 'test2@example.com', password: 'password123', role: 1 });
+    await user2.save();
+    const token2 = user2.generateToken();
+
     const res = await request(app)
-      .get(`/api/get-reaction-times/${userId}`);
-    
-    expect(res.statusCode).toEqual(401);
-    expect(res.body.message).toBe('Authorization token missing or malformed');
+      .get(`/get-reaction-times/${user2._id}`)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.statusCode).toBe(403);
+    expect(res.body).toHaveProperty('message', 'Forbidden: Access is denied');
   });
 });

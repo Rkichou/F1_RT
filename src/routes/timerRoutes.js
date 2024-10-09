@@ -2,12 +2,13 @@ const express = require('express');
 const router = express.Router();
 const timerController = require('../controllers/timerController'); // Import your controller
 const Timer = require('../models/Timer'); // Import the Timer model
+const { authMiddleware } = require('../middleware/authMiddleware');
 
 // Submit a reaction time
-router.post('/submit-reaction-time', timerController.submitReactionTime);
+router.post('/submit-reaction-time', authMiddleware, timerController.submitReactionTime);
 
 // Retrieve reaction times for a user
-router.get('/get-reaction-times/:userId', timerController.getReactionTimes);
+router.get('/get-reaction-times/:userId',authMiddleware, timerController.getReactionTimes);
 
 // Example route for getting all timers (if needed)
 router.get('/timers', async (req, res) => {
@@ -39,4 +40,4 @@ router.post('/timers', async (req, res) => {
     }
 });
 
-module.exports = router;
+module.exports = router; 

@@ -1,6 +1,6 @@
 const Timer = require('../models/Timer');
 const validator = require('../utils/validator');
-
+    
 // @desc    Submit a reaction time
 // @route   POST /submit-reaction-time
 // @access  Private
