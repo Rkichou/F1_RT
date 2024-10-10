@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reaction Time Tester</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+        }
+        .traffic-lights {
+    display: flex;
+    justify-content: space-around;
+    margin: 20px 0;
+    gap: 10px;
+}
+
+.light {
+    width: 60px;
+    height: 60px;
+    background-color: red;
+    border-radius: 50%;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    transition: background-color 0.5s ease;
+}
+
+
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1, h2 {
+            text-align: center;
+        }
+
+        input {
+            width: 93%;
+            padding: 10px;
+            margin: 10px 0;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #218838;
+        }
+
+        #reactionTime {
+            margin-top: 20px;
+            font-size: 20px;
+            text-align: center;
+        }
+
+        .toggle-section {
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .toggle-section span {
+            cursor: pointer;
+            color: blue;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Reaction Time Tester</h1>
+
+        <div id="login" class="auth-section">
+            <h2>Login</h2>
+            <input type="email" id="loginEmail" placeholder="Email" required>
+            <input type="password" id="loginPassword" placeholder="Password" required>
+            <button id="loginButton">Login</button>
+            <p id="loginMessage"></p>
+            <div class="toggle-section">
+                <p>Don't have an account? <span id="showSignUp">Sign up</span></p>
+            </div>
+        </div>
+
+        <div id="signup" class="auth-section" style="display: none;">
+            <h2>Create Account</h2>
+            <input type="email" id="signupEmail" placeholder="Email" required>
+            <input type="password" id="signupPassword" placeholder="Password" required>
+            <button id="signupButton">Sign Up</button>
+            <p id="signupMessage"></p>
+            <div class="toggle-section">
+                <p>Already have an account? <span id="showLogin">Login</span></p>
+            </div>
+        </div>
+
+        <div id="timerSection" style="display: none;">
+            <h2>Press the button when it appears!</h2>
+            <div id="trafficLights" class="traffic-lights">
+                <div class="light" id="light1"></div>
+                <div class="light" id="light2"></div>
+                <div class="light" id="light3"></div>
+            </div>
+            
+            <button id="startTimerButton">Start Timer</button>
+            
+            <button id="stopTimerButton" style="display: none;">Stop Timer</button>
+            <p id="reactionTime"></p>
+        </div>
+    </div>
+
+    <script>
+        const loginButton = document.getElementById('loginButton');
+        const signupButton = document.getElementById('signupButton');
+        const startTimerButton = document.getElementById('startTimerButton');
+        const stopTimerButton = document.getElementById('stopTimerButton');
+        const loginMessage = document.getElementById('loginMessage');
+        const signupMessage = document.getElementById('signupMessage');
+        const timerSection = document.getElementById('timerSection');
+        const reactionTime = document.getElementById('reactionTime');
+        const showSignUp = document.getElementById('showSignUp');
+        const showLogin = document.getElementById('showLogin');
+        const loginSection = document.getElementById('login');
+        const signupSection = document.getElementById('signup');
+
+        let timerStartTime;
+        let userToken;
+        let timerTimeout;
+
+        // Toggle between login and signup sections
+        showSignUp.addEventListener('click', () => {
+            loginSection.style.display = 'none';
+            signupSection.style.display = 'block';
+        });
+
+        showLogin.addEventListener('click', () => {
+            signupSection.style.display = 'none';
+            loginSection.style.display = 'block';
+        });
+
+        // Login functionality
+        loginButton.addEventListener('click', async () => {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+
+            // Make a login request to your backend
+            const response = await fetch('http://localhost:5000/api/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ email, password })
+            });
+
+            const data = await response.json();
+            if (response.ok) {
+                loginMessage.textContent = 'Login successful! Get ready to test your reaction time.';
+                loginMessage.style.color = 'green';
+                timerSection.style.display = 'block';
+                userToken = data.token; // Store the token for authenticated requests
+            } else {
+                loginMessage.textContent = data.message;
+                loginMessage.style.color = 'red';
+            }
+        });
+
+        // Sign-up functionality
+        signupButton.addEventListener('click', async () => {
+            const emailtest = document.getElementById('signupEmail').value;
+            const passwordtest = document.getElementById('signupPassword').value;
+            const role = true
+            console.log({ emailtest, passwordtest });
+
+            
+            // Make a signup request to your backend
+            const response = await fetch('http://localhost:5000/api/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ email: emailtest , password: passwordtest , role: 1 })
+            });
+
+            const data = await response.json();
+            if (response.ok) {
+                signupMessage.textContent = 'Account created successfully! Please login.';
+                signupMessage.style.color = 'green';
+                signupSection.style.display = 'none';
+                loginSection.style.display = 'block';
+            } else {
+                signupMessage.textContent = data.message;
+                signupMessage.style.color = 'red';
+            }
+        });
+
+        // Timer functionality
+        startTimerButton.addEventListener('click', () => {
+    reactionTime.textContent = ''; // Clear previous messages
+    startTimerButton.style.display = 'none';
+    stopTimerButton.style.display = 'none'; // Hide stop button initially
+
+    const light1 = document.getElementById('light1');
+    const light2 = document.getElementById('light2');
+    const light3 = document.getElementById('light3');
+
+    // Set all lights to red initially
+    light1.style.backgroundColor = 'black';
+    light2.style.backgroundColor = 'black';
+    light3.style.backgroundColor = 'black';
+
+    // Sequence to change lights to green
+    setTimeout(() => {
+        light1.style.backgroundColor = 'red'; // First light remains red for 1s
+    }, 1000); 
+
+    setTimeout(() => {
+        light2.style.backgroundColor = 'red'; // Second light remains red for 2s
+    }, 2000); 
+
+    setTimeout(() => {
+        light3.style.backgroundColor = 'red'; // Third light remains red for 3s
+    }, 3000); 
+
+    setTimeout(() => {
+        // All lights turn green after 4 seconds
+        light1.style.backgroundColor = 'green';
+        light2.style.backgroundColor = 'green';
+        light3.style.backgroundColor = 'green';
+
+        reactionTime.textContent = 'Go! Press the stop button!';
+        stopTimerButton.style.display = 'block'; // Show stop button
+        timerStartTime = new Date().getTime(); // Start the timer
+    }, 4000); // After 4s all lights turn green
+});
+
+
+        stopTimerButton.addEventListener('click', async () => {
+            if (!timerStartTime) return; // Prevent clicking before timer starts
+
+            // Calculate reaction time
+            const reactionTimeValue = new Date().getTime() - timerStartTime;
+            reactionTime.textContent = `Your reaction time: ${reactionTimeValue} ms`;
+
+            // Send reaction time to the backend
+            const response = await fetch('http://localhost:5000/api/submit-reaction-time', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${userToken}` // Send the token for authentication
+                },
+                body: JSON.stringify({ time: reactionTimeValue })
+            });
+
+            const data = await response.json();
+            if (response.ok) {
+                reactionTime.textContent += ' (Saved in database)';
+            } else {
+                reactionTime.textContent += ' (Failed to save to database)';
+            }
+
+            clearTimeout(timerTimeout);
+            startTimerButton.style.display = 'block';
+            stopTimerButton.style.display = 'none';
+            timerStartTime = null; // Reset the timer
+        });
+    </script>
+</body>
+</html>
