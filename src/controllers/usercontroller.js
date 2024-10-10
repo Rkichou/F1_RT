@@ -23,7 +23,9 @@ exports.register = async (req, res) => {
 // @access  Public
 exports.login = async (req, res) => {
   try {
+    
     const { email, password } = req.body;
+    console.log(email);
     const { user, token } = await authService.loginUser(email, password);
     res.status(200).json({
       message: 'Logged in successfully',

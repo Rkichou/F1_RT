@@ -22,8 +22,6 @@ exports.registerUser = async (email, password, role) => {
 
   // Create new user
   const user = new User({ email, password, role });
-  const salt = await bcrypt.genSalt(10);
-  user.password = await bcrypt.hash(password, salt);
   await user.save();
 
   // Generate JWT token
@@ -33,26 +31,33 @@ exports.registerUser = async (email, password, role) => {
 };
 
 exports.loginUser = async (email, password) => {
+  console.log('Login attempt:', { email, password });
+  
   // Validate input
   const { valid, errors } = validator.validateLoginInput(email, password);
   if (!valid) {
+    console.log('Validation error:', errors);
     throw { status: 400, message: errors };
   }
 
   // Check for user existence
   const user = await User.findOne({ email });
   if (!user) {
+    console.log('User not found for email:', email);
     throw { status: 400, message: 'Invalid credentials' };
   }
 
   // Compare the password
   const isMatch = await bcrypt.compare(password, user.password);
   if (!isMatch) {
+    console.log('Password mismatch for user:', email);
     throw { status: 400, message: 'Invalid credentials' };
   }
 
   // Generate JWT token
   const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '1h' });
+  console.log('User logged in successfully:', { email, token });
 
   return { user, token };
 };
+
