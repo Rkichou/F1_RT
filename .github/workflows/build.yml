@@ -3,8 +3,6 @@ on:
   push:
     branches:
       - main
-      - rayan
-      - amrou
   pull_request:
     types: [opened, synchronize, reopened]
 jobs:
